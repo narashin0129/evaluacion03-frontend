@@ -4,6 +4,7 @@ import Inicio from './pages/Inicio'
 import Gestion from './pages/Gestion'
 import DatosApi from './pages/DatosApi'
 import Header from './components/Header'
+import ConfirmDialog from './components/ConfirmDialog'
 
 
 const API_URL = 'http://127.0.0.1:8000/api/servicios'
@@ -63,6 +64,7 @@ function App() {
   const [isEditing, setIsEditing] = useState(false)
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false)
   const [estadoApi, setEstadoApi] = useState('cargando') // 'cargando' | 'ok' | 'error' // solo para la api, diferente de mensaje y error que son para el crud
+  const [reservaAEliminar, setReservaAEliminar] = useState(null)
 
   useEffect(() => {
     const datosGuardados = localStorage.getItem('reservas-lavanderia')
@@ -157,13 +159,24 @@ useEffect(() => {
     setError('')
   }
 
-  function eliminarReserva(id) {
-    setReservas((prev) => prev.filter((reserva) => reserva.id !== id))
-    if (form.id === id) {
-      resetForm()
-    }
-    setMensaje('Reserva eliminada correctamente.')
+  function pedirConfirmacionEliminar(id) {
+    const reserva = reservas.find((r) => r.id === id)
+    setReservaAEliminar(reserva)
+}
+
+function confirmarEliminar() {
+  const id = reservaAEliminar.id
+  setReservas((prev) => prev.filter((r) => r.id !== id))
+  if (form.id === id) {
+    resetForm()
   }
+  setMensaje('Reserva eliminada correctamente.')
+  setReservaAEliminar(null)
+}
+
+function cancelarEliminar() {
+  setReservaAEliminar(null)
+}
 
   function crearReserva(event) {
     event.preventDefault()
@@ -227,6 +240,9 @@ useEffect(() => {
 
       <Header seleccionados={seleccionados} total={total} formatCurrency={formatCurrency} />
 
+      {mensaje && <div className="alert success">{mensaje}</div>}
+      {error && <div className="alert error">{error}</div>}
+      
       <main>
         <Routes>
           <Route
@@ -255,7 +271,7 @@ useEffect(() => {
                 onCancelForm={resetForm}
                 reservas={reservas}
                 onEdit={startEditReserva}
-                onDelete={eliminarReserva}
+                onDelete={pedirConfirmacionEliminar}
               />
             }
           />
@@ -276,6 +292,13 @@ useEffect(() => {
         <p>Lavandería Express © 2026 · Evaluación 03</p>
       </footer>
 
+      {reservaAEliminar && (
+        <ConfirmDialog
+          mensaje={`¿Seguro que quieres eliminar la reserva de ${reservaAEliminar.cliente}? Esta acción no se puede deshacer.`}
+          onConfirm={confirmarEliminar}
+          onCancel={cancelarEliminar}
+        />
+)}  
     </div>
   )
 }

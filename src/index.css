@@ -172,3 +172,32 @@ button[type='submit'] { width: 100%; padding: 12px; margin-top: 8px; }
 .api-status--error { background: rgba(248, 113, 113, 0.18); color: #fecaca; }
 .api-status--error button { margin-top: 10px; }
 .api-data-list { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 6px; }
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.confirm-box {
+  background: #1e293b;
+  color: white;
+  padding: 24px;
+  border-radius: 16px;
+  max-width: 360px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+.confirm-cancel, .confirm-delete {
+  flex: 1;
+  padding: 10px;
+}
+.confirm-delete { background: #dc2626; }
+
