@@ -1,4 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import Header from './components/Header'
+import ServiciosList from './components/ServiciosList'
+import PedidoPanel from './components/PedidoPanel'
+import ReservaForm from './components/ReservaForm'
+import ReservasRecientes from './components/ReservasRecientes'
 
 const API_URL = 'http://127.0.0.1:8000/api/servicios'
 
@@ -33,26 +38,29 @@ const FALLBACK_SERVICIOS = [
 ]
 
 function formatCurrency(value) {
-  return new Intl.NumberFormat('es-CL', {
-    style: 'currency',
-    currency: 'CLP',
-    maximumFractionDigits: 0,
-  }).format(value)
+  return `$${value.toLocaleString('es-CL')}`
 }
 
-export default function App() {
-  const [servicios, setServicios] = useState(FALLBACK_SERVICIOS)
-  const [seleccionados, setSeleccionados] = useState([])
-  const [form, setForm] = useState({
+function createEmptyForm() {
+  return {
+    id: null,
     nombre: '',
     telefono: '',
     fecha: '',
     notas: '',
     metodo: 'Retiro en tienda',
-  })
+  }
+}
+
+function App() {
+  const [servicios, setServicios] = useState(FALLBACK_SERVICIOS)
+  const [seleccionados, setSeleccionados] = useState([])
+  const [form, setForm] = useState(createEmptyForm())
   const [reservas, setReservas] = useState([])
   const [mensaje, setMensaje] = useState('')
   const [error, setError] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
+  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false)
 
   useEffect(() => {
     const datosGuardados = localStorage.getItem('reservas-lavanderia')
@@ -63,11 +71,13 @@ export default function App() {
         localStorage.removeItem('reservas-lavanderia')
       }
     }
+    setHasLoadedFromStorage(true)
   }, [])
 
   useEffect(() => {
+    if (!hasLoadedFromStorage) return
     localStorage.setItem('reservas-lavanderia', JSON.stringify(reservas))
-  }, [reservas])
+  }, [reservas, hasLoadedFromStorage])
 
   useEffect(() => {
     fetch(API_URL)
@@ -88,6 +98,11 @@ export default function App() {
   const total = useMemo(() => {
     return seleccionados.reduce((sum, item) => sum + item.precio * item.cantidad, 0)
   }, [seleccionados])
+
+  function resetForm() {
+    setForm(createEmptyForm())
+    setIsEditing(false)
+  }
 
   function toggleServicio(servicio) {
     if (!servicio.disponible) return
@@ -121,160 +136,125 @@ export default function App() {
     setForm((prev) => ({ ...prev, [name]: value }))
   }
 
+  function startEditReserva(reserva) {
+    setForm({
+      id: reserva.id,
+      nombre: reserva.cliente,
+      telefono: reserva.telefono,
+      fecha: reserva.fecha,
+      notas: reserva.notas,
+      metodo: reserva.metodo,
+    })
+    setIsEditing(true)
+    setError('')
+  }
+
+  function eliminarReserva(id) {
+    setReservas((prev) => prev.filter((reserva) => reserva.id !== id))
+    if (form.id === id) {
+      resetForm()
+    }
+    setMensaje('Reserva eliminada correctamente.')
+  }
+
   function crearReserva(event) {
     event.preventDefault()
 
-    if (!form.nombre || !form.telefono || !form.fecha || seleccionados.length === 0) {
-      setError('Completa tus datos y selecciona al menos un servicio.')
+    if (!form.nombre || !form.telefono || !form.fecha) {
+      setError('Completa tus datos para guardar la reserva.')
       return
     }
 
-    const nuevaReserva = {
-      id: Date.now(),
-      cliente: form.nombre,
-      telefono: form.telefono,
-      fecha: form.fecha,
-      metodo: form.metodo,
-      notas: form.notas,
-      servicios: seleccionados,
-      total,
-      estado: 'Pendiente',
+    if (!form.id && seleccionados.length === 0) {
+      setError('Selecciona al menos un servicio para crear una reserva.')
+      return
     }
 
-    setReservas((prev) => [nuevaReserva, ...prev])
+    const reservaActual = reservas.find((reserva) => reserva.id === form.id)
+    const serviciosParaGuardar = reservaActual?.servicios ?? seleccionados
+    const totalParaGuardar = reservaActual?.total ?? total
+
+    if (form.id) {
+      setReservas((prev) =>
+        prev.map((reserva) =>
+          reserva.id === form.id
+            ? {
+                ...reserva,
+                cliente: form.nombre,
+                telefono: form.telefono,
+                fecha: form.fecha,
+                metodo: form.metodo,
+                notas: form.notas,
+                servicios: serviciosParaGuardar,
+                total: totalParaGuardar,
+              }
+            : reserva
+        )
+      )
+      setMensaje('Reserva actualizada correctamente.')
+    } else {
+      const nuevaReserva = {
+        id: Date.now(),
+        cliente: form.nombre,
+        telefono: form.telefono,
+        fecha: form.fecha,
+        metodo: form.metodo,
+        notas: form.notas,
+        servicios: seleccionados,
+        total,
+        estado: 'Pendiente',
+      }
+
+      setReservas((prev) => [nuevaReserva, ...prev])
+      setMensaje('Reserva creada con éxito. Recibirás una confirmación por WhatsApp.')
+    }
+
     setSeleccionados([])
-    setForm({ nombre: '', telefono: '', fecha: '', notas: '', metodo: 'Retiro en tienda' })
-    setMensaje('Reserva creada con éxito. Recibirás una confirmación por WhatsApp.')
+    resetForm()
     setError('')
   }
 
   return (
     <div className="app-shell">
-      <header className="hero">
-        <div>
-          <p className="eyebrow">Evaluación 03 · React + Vite</p>
-          <h1>Lavandería Express</h1>
-          <p>Gestiona reservas y pedidos de tus servicios favoritos en minutos.</p>
-        </div>
-
-        <div className="hero-card">
-          <h2>Resumen rápido</h2>
-          <p>{seleccionados.length} servicio(s) seleccionado(s)</p>
-          <strong>{formatCurrency(total)}</strong>
-        </div>
-      </header>
-
-      {mensaje && <div className="alert success">{mensaje}</div>}
-      {error && <div className="alert error">{error}</div>}
+      <Header seleccionados={seleccionados} total={total} formatCurrency={formatCurrency} />
 
       <main className="layout">
-        <section>
-          <h2>Servicios disponibles</h2>
-          <div className="cards-grid">
-            {servicios.map((servicio) => (
-              <article key={servicio.id} className={`service-card ${!servicio.disponible ? 'disabled' : ''}`}>
-                <img src={servicio.imagen} alt={servicio.nombre} />
-                <div className="service-body">
-                  <div className="service-top">
-                    <h3>{servicio.nombre}</h3>
-                    <span>{servicio.categoria}</span>
-                  </div>
-                  <p>{servicio.descripcion}</p>
-                  <div className="service-footer">
-                    <strong>{formatCurrency(servicio.precio)}</strong>
-                    <button type="button" onClick={() => toggleServicio(servicio)} disabled={!servicio.disponible}>
-                      {seleccionados.some((item) => item.id === servicio.id) ? 'Quitar' : 'Agregar'}
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
+        <ServiciosList
+          servicios={servicios}
+          seleccionados={seleccionados}
+          onToggleServicio={toggleServicio}
+          formatCurrency={formatCurrency}
+        />
 
         <aside className="sidebar">
-          <section className="panel">
-            <h2>Tu pedido</h2>
-            {seleccionados.length === 0 ? (
-              <p className="empty">Aún no has agregado servicios.</p>
-            ) : (
-              <ul className="pedido-list">
-                {seleccionados.map((item) => (
-                  <li key={item.id}>
-                    <div>
-                      <strong>{item.nombre}</strong>
-                      <p>{formatCurrency(item.precio)} c/u</p>
-                    </div>
-                    <div className="qty-controls">
-                      <button type="button" onClick={() => cambiarCantidad(item.id, -1)}>-</button>
-                      <span>{item.cantidad}</span>
-                      <button type="button" onClick={() => cambiarCantidad(item.id, 1)}>+</button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+          <PedidoPanel
+            seleccionados={seleccionados}
+            total={total}
+            onCambiarCantidad={cambiarCantidad}
+            formatCurrency={formatCurrency}
+          />
 
-            <div className="total-box">
-              <span>Total estimado</span>
-              <strong>{formatCurrency(total)}</strong>
-            </div>
-          </section>
+          <ReservaForm
+            form={form}
+            isEditing={isEditing}
+            onChange={actualizarForm}
+            onSubmit={crearReserva}
+            onCancel={resetForm}
+          />
 
-          <section className="panel">
-            <h2>Reservar</h2>
-            <form onSubmit={crearReserva} className="form-grid">
-              <label>
-                Nombre
-                <input name="nombre" value={form.nombre} onChange={actualizarForm} placeholder="Tu nombre" />
-              </label>
+          {mensaje && <div className="alert success">{mensaje}</div>}
+          {error && <div className="alert error">{error}</div>}
 
-              <label>
-                Teléfono
-                <input name="telefono" value={form.telefono} onChange={actualizarForm} placeholder="912345678" />
-              </label>
-
-              <label>
-                Fecha de retiro
-                <input name="fecha" type="date" value={form.fecha} onChange={actualizarForm} />
-              </label>
-
-              <label>
-                Método
-                <select name="metodo" value={form.metodo} onChange={actualizarForm}>
-                  <option value="Retiro en tienda">Retiro en tienda</option>
-                  <option value="Delivery">Delivery</option>
-                  <option value="Recoger en horario">Recoger en horario</option>
-                </select>
-              </label>
-
-              <label className="full">
-                Notas
-                <textarea name="notas" value={form.notas} onChange={actualizarForm} placeholder="Detalles adicionales" rows="3" />
-              </label>
-
-              <button type="submit" className="full">Confirmar reserva</button>
-            </form>
-          </section>
-
-          <section className="panel">
-            <h2>Reservas recientes</h2>
-            {reservas.length === 0 ? (
-              <p className="empty">No hay reservas aún.</p>
-            ) : (
-              <ul className="reservation-list">
-                {reservas.slice(0, 3).map((reserva) => (
-                  <li key={reserva.id}>
-                    <strong>{reserva.cliente}</strong>
-                    <p>{reserva.fecha} · {reserva.metodo}</p>
-                    <span>{formatCurrency(reserva.total)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <ReservasRecientes
+            reservas={reservas}
+            formatCurrency={formatCurrency}
+            onEdit={startEditReserva}
+            onDelete={eliminarReserva}
+          />
         </aside>
       </main>
     </div>
   )
 }
+
+export default App
