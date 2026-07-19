@@ -201,3 +201,9 @@ button[type='submit'] { width: 100%; padding: 12px; margin-top: 8px; }
 }
 .confirm-delete { background: #dc2626; }
 
+.field-error {
+  color: #fca5a5;
+  font-size: 0.8rem;
+  margin-top: -2px;
+}
+

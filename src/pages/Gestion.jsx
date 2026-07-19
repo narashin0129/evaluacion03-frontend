@@ -12,6 +12,7 @@ function Gestion({
   onChangeForm,
   onSubmitForm,
   onCancelForm,
+  errores,
   reservas,
   onEdit,
   onDelete,
@@ -33,6 +34,7 @@ function Gestion({
             onChange={onChangeForm}
             onSubmit={onSubmitForm}
             onCancel={onCancelForm}
+            errores={errores}
           />
         </div>
         <ReservasRecientes

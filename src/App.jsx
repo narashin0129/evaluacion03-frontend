@@ -5,6 +5,7 @@ import Gestion from './pages/Gestion'
 import DatosApi from './pages/DatosApi'
 import Header from './components/Header'
 import ConfirmDialog from './components/ConfirmDialog'
+import { validarReserva } from './utils/validarReserva'
 
 
 const API_URL = 'http://127.0.0.1:8000/api/servicios'
@@ -65,6 +66,8 @@ function App() {
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false)
   const [estadoApi, setEstadoApi] = useState('cargando') // 'cargando' | 'ok' | 'error' // solo para la api, diferente de mensaje y error que son para el crud
   const [reservaAEliminar, setReservaAEliminar] = useState(null)
+  const [erroresForm, setErroresForm] = useState({})
+
 
   useEffect(() => {
     const datosGuardados = localStorage.getItem('reservas-lavanderia')
@@ -112,6 +115,7 @@ useEffect(() => {
   function resetForm() {
     setForm(createEmptyForm())
     setIsEditing(false)
+    setErroresForm({})
   }
 
   function toggleServicio(servicio) {
@@ -181,8 +185,9 @@ function cancelarEliminar() {
   function crearReserva(event) {
     event.preventDefault()
 
-    if (!form.nombre || !form.telefono || !form.fecha) {
-      setError('Completa tus datos para guardar la reserva.')
+    const errores = validarReserva(form)
+    setErroresForm(errores)
+    if (Object.keys(errores).length > 0) {
       return
     }
 
@@ -268,6 +273,7 @@ function cancelarEliminar() {
                 isEditing={isEditing}
                 onChangeForm={actualizarForm}
                 onSubmitForm={crearReserva}
+                errores={erroresForm}
                 onCancelForm={resetForm}
                 reservas={reservas}
                 onEdit={startEditReserva}
