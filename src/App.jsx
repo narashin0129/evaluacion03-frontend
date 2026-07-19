@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Routes, Route } from 'react-router-dom'
+import Inicio from './pages/Inicio'
+import Gestion from './pages/Gestion'
+import DatosApi from './pages/DatosApi'
 import Header from './components/Header'
-import ServiciosList from './components/ServiciosList'
-import PedidoPanel from './components/PedidoPanel'
-import ReservaForm from './components/ReservaForm'
-import ReservasRecientes from './components/ReservasRecientes'
+
 
 const API_URL = 'http://127.0.0.1:8000/api/servicios'
 
@@ -61,6 +62,7 @@ function App() {
   const [error, setError] = useState('')
   const [isEditing, setIsEditing] = useState(false)
   const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false)
+  const [estadoApi, setEstadoApi] = useState('cargando') // 'cargando' | 'ok' | 'error' // solo para la api, diferente de mensaje y error que son para el crud
 
   useEffect(() => {
     const datosGuardados = localStorage.getItem('reservas-lavanderia')
@@ -79,21 +81,27 @@ function App() {
     localStorage.setItem('reservas-lavanderia', JSON.stringify(reservas))
   }, [reservas, hasLoadedFromStorage])
 
-  useEffect(() => {
-    fetch(API_URL)
-      .then((response) => {
-        if (!response.ok) throw new Error('No se pudo cargar la API')
-        return response.json()
-      })
-      .then((data) => {
-        if (data?.servicios?.length) {
-          setServicios(data.servicios)
-        }
-      })
-      .catch(() => {
-        setMensaje('La API no responde, se muestran los servicios de respaldo.')
-      })
-  }, [])
+  function cargarServicios() {
+  setEstadoApi('cargando')
+  fetch(API_URL)
+    .then((response) => {
+      if (!response.ok) throw new Error('No se pudo cargar la API')
+      return response.json()
+    })
+    .then((data) => {
+      if (data?.servicios?.length) {
+        setServicios(data.servicios)
+      }
+      setEstadoApi('ok')
+    })
+    .catch(() => {
+      setEstadoApi('error')
+    })
+}
+
+useEffect(() => {
+  cargarServicios()
+}, [])
 
   const total = useMemo(() => {
     return seleccionados.reduce((sum, item) => sum + item.precio * item.cantidad, 0)
@@ -216,43 +224,58 @@ function App() {
 
   return (
     <div className="app-shell">
+
       <Header seleccionados={seleccionados} total={total} formatCurrency={formatCurrency} />
 
-      <main className="layout">
-        <ServiciosList
-          servicios={servicios}
-          seleccionados={seleccionados}
-          onToggleServicio={toggleServicio}
-          formatCurrency={formatCurrency}
-        />
-
-        <aside className="sidebar">
-          <PedidoPanel
-            seleccionados={seleccionados}
-            total={total}
-            onCambiarCantidad={cambiarCantidad}
-            formatCurrency={formatCurrency}
+      <main>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <Inicio
+                servicios={servicios}
+                seleccionados={seleccionados}
+                onToggleServicio={toggleServicio}
+                formatCurrency={formatCurrency}
+              />
+            }
           />
-
-          <ReservaForm
-            form={form}
-            isEditing={isEditing}
-            onChange={actualizarForm}
-            onSubmit={crearReserva}
-            onCancel={resetForm}
+          <Route
+            path="/gestion"
+            element={
+              <Gestion
+                seleccionados={seleccionados}
+                total={total}
+                onCambiarCantidad={cambiarCantidad}
+                formatCurrency={formatCurrency}
+                form={form}
+                isEditing={isEditing}
+                onChangeForm={actualizarForm}
+                onSubmitForm={crearReserva}
+                onCancelForm={resetForm}
+                reservas={reservas}
+                onEdit={startEditReserva}
+                onDelete={eliminarReserva}
+              />
+            }
           />
-
-          {mensaje && <div className="alert success">{mensaje}</div>}
-          {error && <div className="alert error">{error}</div>}
-
-          <ReservasRecientes
-            reservas={reservas}
-            formatCurrency={formatCurrency}
-            onEdit={startEditReserva}
-            onDelete={eliminarReserva}
-          />
-        </aside>
+          <Route
+            path="/api"
+            element={
+              <DatosApi
+                servicios={servicios}
+                estadoApi={estadoApi}
+                onReintentar={cargarServicios}
+              />
+            }
+/>
+        </Routes>
       </main>
+          
+      <footer className="app-footer">
+        <p>Lavandería Express © 2026 · Evaluación 03</p>
+      </footer>
+
     </div>
   )
 }

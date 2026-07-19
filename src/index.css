@@ -157,3 +157,18 @@ button[type='submit'] { width: 100%; padding: 12px; margin-top: 8px; }
   .layout { grid-template-columns: 1fr; }
   .hero { flex-direction: column; align-items: flex-start; }
 }
+
+.main-nav { display: flex; gap: 16px; margin-top: 12px; }
+.main-nav a { color: #93c5fd; text-decoration: none; font-weight: 600; }
+.main-nav a.active { color: white; text-decoration: underline; }
+
+.api-status {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 14px;
+}
+.api-status--cargando { background: rgba(250, 204, 21, 0.15); color: #fde68a; }
+.api-status--ok { background: rgba(34, 197, 94, 0.15); color: #bbf7d0; }
+.api-status--error { background: rgba(248, 113, 113, 0.18); color: #fecaca; }
+.api-status--error button { margin-top: 10px; }
+.api-data-list { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 6px; }
