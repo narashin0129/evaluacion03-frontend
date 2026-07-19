@@ -15,17 +15,13 @@ function ReservaForm({ form, isEditing, onChange, onSubmit, onCancel }) {
         </label>
 
         <label>
-          Fecha de retiro
-          <input name="fecha" type="date" value={form.fecha} onChange={onChange} />
+          Correo
+          <input name="correo" type="email" value={form.correo} onChange={onChange} placeholder="tu@correo.com" />
         </label>
 
         <label>
-          Método
-          <select name="metodo" value={form.metodo} onChange={onChange}>
-            <option value="Retiro en tienda">Retiro en tienda</option>
-            <option value="Delivery">Delivery</option>
-            <option value="Recoger en horario">Recoger en horario</option>
-          </select>
+          Fecha de retiro
+          <input name="fecha" type="date" value={form.fecha} onChange={onChange} />
         </label>
 
         <label className="full">

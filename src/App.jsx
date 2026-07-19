@@ -48,9 +48,9 @@ function createEmptyForm() {
     id: null,
     nombre: '',
     telefono: '',
+    correo : '',
     fecha: '',
     notas: '',
-    metodo: 'Retiro en tienda',
   }
 }
 
@@ -151,9 +151,9 @@ useEffect(() => {
       id: reserva.id,
       nombre: reserva.cliente,
       telefono: reserva.telefono,
+      correo: reserva.correo,
       fecha: reserva.fecha,
       notas: reserva.notas,
-      metodo: reserva.metodo,
     })
     setIsEditing(true)
     setError('')
@@ -203,8 +203,8 @@ function cancelarEliminar() {
                 ...reserva,
                 cliente: form.nombre,
                 telefono: form.telefono,
+                correo: form.correo,
                 fecha: form.fecha,
-                metodo: form.metodo,
                 notas: form.notas,
                 servicios: serviciosParaGuardar,
                 total: totalParaGuardar,
@@ -218,8 +218,8 @@ function cancelarEliminar() {
         id: Date.now(),
         cliente: form.nombre,
         telefono: form.telefono,
+        correo: form.correo,
         fecha: form.fecha,
-        metodo: form.metodo,
         notas: form.notas,
         servicios: seleccionados,
         total,

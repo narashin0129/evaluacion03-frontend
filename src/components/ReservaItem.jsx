@@ -4,7 +4,7 @@ function ReservaItem({ reserva, formatCurrency, onEdit, onDelete }) {
     <li>
       <div>
         <strong>{reserva.cliente}</strong>
-        <p>{reserva.fecha} · {reserva.metodo}</p>
+        <p>{reserva.fecha} · {reserva.correo}</p>
         <span>{formatCurrency(reserva.total)}</span>
       </div>
       <div className="qty-controls">
