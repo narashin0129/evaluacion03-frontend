@@ -168,6 +168,28 @@ useEffect(() => {
     setReservaAEliminar(reserva)
 }
 
+useEffect(() => {
+  if (!mensaje) return
+  const timer = setTimeout(() => setMensaje(''), 3000)
+  return () => clearTimeout(timer)
+}, [mensaje]) 
+
+useEffect(() => {
+  if (!error) return
+  const timer = setTimeout(() => setError(''), 3000)
+  return () => clearTimeout(timer)
+}, [error])
+
+{/*Ahora mismo el mensaje se queda pegado en pantalla hasta que se 
+  dispara otra acción. Un detalle más pulido es que desaparezca solo.
+  Cómo funciona: cada vez que mensaje cambia (deja de estar vacío), 
+  arma un temporizador de 3 segundos que al cumplirse limpia el mensaje. 
+  La función que retorna (return () => clearTimeout(timer)) es la "limpieza" 
+  de este efecto — se ejecuta automáticamente si mensaje vuelve a cambiar 
+  antes de que pasen los 3 segundos (por ejemplo, si el usuario hace otra 
+  acción rápido), cancelando el temporizador anterior para que no se disparen 
+  varios a la vez.*/}
+
 function confirmarEliminar() {
   const id = reservaAEliminar.id
   setReservas((prev) => prev.filter((r) => r.id !== id))
